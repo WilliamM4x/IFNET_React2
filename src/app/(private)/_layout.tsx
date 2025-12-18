@@ -1,37 +1,51 @@
 import { Stack, useRouter } from "expo-router";
 import { useSelector } from "react-redux";
-import { selectAuth } from "../store/reducers/autheSlice";
-import { RootState } from "../store/store";
+import { logout, selectAuth } from "../store/reducers/autheSlice";
+import { RootState, useAppDispatch } from "../store/store";
 import { Spinner } from "@/components/ui/spinner";
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
+import { Button, ButtonIcon } from "@/components/ui/button";
+import { LogOutIcon } from "lucide-react-native";
 
 
 export default function PrivateLayout() {
     const router = useRouter();
     const { token } = useSelector(selectAuth);
-    
-    useEffect(()=>{
-        if(!token){
+    const dispatch = useAppDispatch();
+
+    useEffect(() => {
+        if (!token) {
             router.replace('/')
         }
-    },[router, token]);
+    }, [router, token]);
 
-    if(!token){
-        return <Spinner/>
+
+    const handleLogout = useCallback(async () => {
+        await dispatch(logout())
+    }, [dispatch]);
+
+
+    if (!token) {
+        return <Spinner />
     }
 
     return <Stack>
         <Stack.Screen name='home'
-        options={{
-        title: "Início"
-        }} />
+            options={{
+                title: "Início",
+                headerRight: () => (
+                    <Button onPress={handleLogout}>
+                        <ButtonIcon as={LogOutIcon} action="negative" />
+                    </Button>
+                )
+            }} />
 
-        <Stack.Screen 
-        name='details/[id]' 
-        options={{
-        headerShown: true,
-        title: "Detalhes"
-        }}/>
+        <Stack.Screen
+            name='details/[id]'
+            options={{
+                headerShown: true,
+                title: "Detalhes"
+            }} />
 
 
     </Stack>

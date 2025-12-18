@@ -9,19 +9,49 @@ import {
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
-import { Slot, Stack, usePathname } from 'expo-router';
+import { Slot, Stack, usePathname, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Fab, FabIcon } from '@/components/ui/fab';
 import { MoonIcon, SunIcon } from '@/components/ui/icon';
 import { TailwindProvider } from 'tailwindcss-react-native'
-import  { Provider } from 'react-redux'
-import { store } from '@/app/store/store'
+import  { Provider, useSelector } from 'react-redux'
+import { store, useAppDispatch } from '@/app/store/store'
+import { loadUserFromStorage, selectAuth } from './store/reducers/autheSlice';
+import { S } from '@expo/html-elements';
 
 
 export {
-  // Catch any errors thrown by the Layout component.
   ErrorBoundary,
 } from 'expo-router';
+
+function StackLayout() {
+  const dispatch = useAppDispatch(); 
+  const router = useRouter();
+  const { status, isLoadingFromStorage } = useSelector(selectAuth);
+  useEffect(() => {
+    dispatch(loadUserFromStorage());
+  },[dispatch]);
+  useEffect(() => {
+    if(isLoadingFromStorage) return;
+
+    if(status == 'authenticated'){
+        router.replace('/home');
+    }
+  },[dispatch, status, isLoadingFromStorage]);
+
+  return (
+     <Stack screenOptions={{
+          headerShown: false
+        }}>
+          <Stack.Screen name='index'/>
+          <Stack.Screen name='register'
+          options={
+            {title: "Registrar"}
+          }/>
+
+        </Stack>
+  )
+}
 
 SplashScreen.preventAutoHideAsync();
 
@@ -30,12 +60,6 @@ export default function RootLayout() {
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
     ...FontAwesome.font,
   });
-
-  const [styleLoaded, setStyleLoaded] = useState(false);
-  // Expo Router uses Error Boundaries to catch errors in the navigation tree.
-  useEffect(() => {
-    if (error) throw error;
-  }, [error]);
 
   useEffect(() => {
     if (loaded) {
@@ -47,23 +71,15 @@ export default function RootLayout() {
 
 function RootLayoutNav() {
   const pathname = usePathname();
-  const [colorMode, setColorMode] = useState<'light' | 'dark'>('light');
-
-
+  const [colorMode, setColorMode] = useState<'light' | 'dark'>('light');  
  
   return (
-    <TailwindProvider>
-      <Provider store={store}>
-        
 
+    <Provider store={store}>
     <GluestackUIProvider mode={colorMode}>
       <ThemeProvider value={colorMode === 'dark' ? DarkTheme : DefaultTheme}>
-        <Stack screenOptions={{
-          headerShown: false
-        }}>
-          <Stack.Screen name='index'/>
-
-        </Stack>
+       
+       <StackLayout/>
         
         {pathname === '/' && (
           <Fab
@@ -78,7 +94,6 @@ function RootLayoutNav() {
         )}
       </ThemeProvider>
     </GluestackUIProvider>
-    </Provider>
-  </TailwindProvider>
+  </Provider>
   );
 }

@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { logout, selectAuth } from "../store/reducers/autheSlice";
 import { Button, ButtonText } from "@/components/ui/button";
 import { Text } from '@/components/ui/text';
+import { useAppDispatch } from "../store/store";
 const mockProduct = {
     id: '001',
     title: 'Headphone Noise Cancelling',
@@ -19,19 +20,9 @@ const mockProduct = {
 export default function Home(){
     const router = useRouter();
     const {token} = useSelector(selectAuth);
-    const dispatch = useDispatch();
-
-    const handleLogout= () => {
-        dispatch(logout())
-    } 
 
     return <View className="p-4 flex-1 justify-center bg-slate-500">
       
-       <Text> Meu token é: {token}</Text>
-      
-       <Button onPress={handleLogout} action="negative">
-            <ButtonText>Logout</ButtonText>
-       </Button>
       
         <CardProdut
         {...mockProduct}

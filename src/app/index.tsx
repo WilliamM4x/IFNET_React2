@@ -5,22 +5,27 @@ import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
 import { Heading } from '@/components/ui/heading';
 import { Input, InputField } from '@/components/ui/input';
-import { Button, ButtonText } from '@/components/ui/button';
-import {useDispatch, useSelector} from 'react-redux'
-import { login } from '@/app/store/reducers/autheSlice'
-import { get } from '@/utils/async-storage';
+import { Button, ButtonSpinner, ButtonText } from '@/components/ui/button';
+import { useSelector} from 'react-redux'
+import { login, selectAuth } from '@/app/store/reducers/autheSlice'
+import { useAppDispatch } from './store/store';
+import { Center } from '@/components/ui/center';
+import { Spinner } from '@/components/ui/spinner';
+
+import { Alert, AlertIcon, AlertText } from '@/components/ui/alert';
 
 export default function Home() {
   
   const router = useRouter();
-  const dispatch = useDispatch(); 
-
+  const dispatch = useAppDispatch(); 
+  const { error, isLoading, isLoadingFromStorage } = useSelector(selectAuth);
 
 
   interface FormLogin{
     email: string
     password: string
   }
+  const [errorForm, setErrorForm]= useState<string | null>(null);
 
   const [form, setForm]=useState<FormLogin>({
     email: '',
@@ -31,23 +36,30 @@ export default function Home() {
     setForm(prev=>({...prev, [name]: value}))
   }, []);
 
-  const handleLogin = useCallback(()=>{
+  const handleLogin = useCallback( async ()=>{
+    if(!form.email || !form.password){
+      setErrorForm('Por favor, preencha todos os campos.');
+      return;
+    }
 
-    const fakeToken = 'token-123'
-    dispatch(login(fakeToken));
-
-    router.replace('/home')
+    setErrorForm(null);
+    
+    const token = await dispatch(login(form)).unwrap();
+    if (token){
+      router.replace('/home')
+    }
   }, [form, router]);
 
+  const hendleGoToRegister = useCallback(()=>{
+    router.push('/register')
+  }, [router]);
 
-  useEffect(()=>{
-    get('token').then(token=>{
-     if(token){
-       dispatch(login(token as string));
-       router.replace('/home');
-     }
-    });
-  },[dispatch]);
+  if(isLoadingFromStorage){
+    return (
+      <Center className='flex-1'>
+        <Spinner size='large'/>
+      </Center>
+    )};
 
   return (
     <Box className="flex-1 bg-background-300 h-[100vh] justify-center  p-6">
@@ -57,7 +69,7 @@ export default function Home() {
 
       <VStack space='xs'>
         <Text>E-mail:</Text>
-        <Input variant='rounded' size='md'>
+        <Input variant='rounded' size='md' isDisabled={isLoading}>
           <InputField
             placeholder='Informe o e-mail'
             keyboardType='email-address'
@@ -69,7 +81,7 @@ export default function Home() {
 
       <VStack space='xs'>
         <Text>Password:</Text>
-        <Input variant='rounded' size='md'>
+        <Input variant='rounded' size='md'  isDisabled={isLoading}>
           <InputField
             placeholder='Informe o Password'
             type='password'
@@ -81,9 +93,32 @@ export default function Home() {
       </VStack>
 
       <Button action='primary' size='lg' onPress={handleLogin}>
-        <ButtonText>Entrar</ButtonText>
+        {
+          isLoading ? (
+            <>
+            <ButtonSpinner/>
+            <ButtonText>Entrando...</ButtonText>
+            </>
+          ): 
+          (
+          <ButtonText>Entrar</ButtonText>
+        )
+        }
       </Button>
       
+      <Button variant='link' size='lg' onPress={hendleGoToRegister}>
+        <ButtonText>Não possui uma conta? Registre-se</ButtonText>
+      </Button>
+
+      <Box className='min-h-[43px] justify-center'>
+        {(error || errorForm) && (
+          <Alert action="error" variant="solid">
+            <AlertIcon as={AlertIcon} className="text-red-500 mr-3"/>
+            <AlertText>{error || errorForm}</AlertText>
+          </Alert>
+        )}
+      </Box>
+
     </VStack>
     </Box>
   );
