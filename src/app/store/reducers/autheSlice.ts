@@ -1,24 +1,63 @@
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { RootState } from '../store';
+// Importe o auth do firebase e a função de login
+import { auth } from '@/service/firebaseConfig'; 
+import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { LoginCredentials } from '@/service/api'; // Certifique-se que essa interface tem email e password
 
-import { LoginCredentials, simulateLogin } from '@/service/api';
-import * as storage from '@/service/storage';
-
-export interface AuthState{
-    token : string|null,
-    status: "idle"| 'authenticated',
+// Ajuste a interface para guardar dados úteis do usuário, não só o token
+export interface AuthState {
+    user: { uid: string; email: string | null } | null;
+    token: string | null;
+    status: "idle" | 'authenticated' | 'failed';
     isLoading: boolean;
-    isLoadingFromStorage: boolean;
-    error: string|null; 
+    error: string | null; 
 }
 
 const initialState: AuthState = {
-    status : 'idle',
+    status: 'idle',
+    user: null,
     token: null,
     isLoading: false,
-    isLoadingFromStorage: false,
     error: null
 }
+
+export const login = createAsyncThunk<
+    { uid: string; email: string | null; token: string }, 
+    LoginCredentials 
+>(
+    'auth/login',
+    async ({ email, password }, { rejectWithValue }) => {
+        try {
+  
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
+
+            const token = await user.getIdToken();
+
+            return { 
+                uid: user.uid, 
+                email: user.email,
+                token
+            };
+        } catch (error: any) {
+
+            let msg = "Erro desconhecido";
+            if (error.code === 'auth/invalid-credential') msg = "E-mail ou senha incorretos.";
+            if (error.code === 'auth/invalid-email') msg = "E-mail inválido.";
+            return rejectWithValue(msg);
+        }
+    }
+);
+
+// THUNK DE LOGOUT
+export const logout = createAsyncThunk(
+    'auth/logout', 
+    async () => {
+        await signOut(auth);
+       
+    }
+);
 
 const authSlice = createSlice({
     name: 'auth',
@@ -26,71 +65,38 @@ const authSlice = createSlice({
     reducers: {
       clearError(state){
         state.error = null;
+      },
+      setUser(state, action: PayloadAction<{ uid: string; email: string | null; token: string }>){
+          state.user = { uid: action.payload.uid, email: action.payload.email };
+          state.token = action.payload.token;
+          state.status = 'authenticated';
       }
     }, 
-    extraReducers: (builder)=> {
-        builder.addCase(login.pending, (state)=>{
-            state.isLoading = true;
-           
-        });
-        builder.addCase(login.fulfilled, (state, action: PayloadAction<string>)=>{
-            state.isLoading = false;
-            state.token = action.payload;
-            state.status = 'authenticated';
-            state.error = null;
-        }); 
-        builder.addCase(login.rejected, (state, action)=>{
-            state.isLoading = false;
-            state.error = action.payload as string;
-        });
-
-        builder.addCase(loadUserFromStorage.pending, (state)=>{
-            state.isLoadingFromStorage = true;
-        });
-        builder.addCase(loadUserFromStorage.fulfilled, (state, action: PayloadAction<string | null>)=>{
-            state.isLoadingFromStorage = false;
-            state.token = action.payload;
-            if(action.payload){
+    extraReducers: (builder) => {
+        builder
+            .addCase(login.pending, (state) => {
+                state.isLoading = true;
+                state.error = null;
+            })
+            .addCase(login.fulfilled, (state, action) => {
+                state.isLoading = false;
                 state.status = 'authenticated';
-            }
-        });
-        builder.addCase(loadUserFromStorage.rejected, (state)=>{
-            state.isLoadingFromStorage = false;
-        });
-
-        builder.addCase(logout.fulfilled, (state)=>{
-            state.token = null;
-            state.status = 'idle';
-        });
+                state.token = action.payload.token;
+                state.user = { uid: action.payload.uid, email: action.payload.email };
+            }) 
+            .addCase(login.rejected, (state, action) => {
+                state.isLoading = false;
+                state.status = 'failed';
+                state.error = action.payload as string;
+            })
+            .addCase(logout.fulfilled, (state) => {
+                state.user = null;
+                state.token = null;
+                state.status = 'idle';
+            });
     }
 });
 
-export const login = createAsyncThunk<string, LoginCredentials>(
-    'auth/login',
-    async (credentials, { rejectWithValue })=>{
-        try{
-            const token = await simulateLogin(credentials);
-            await storage.saveToken(token);
-            return token;
-        }catch(e :any){
-            return  rejectWithValue(e.message || "Erro desconhecido");
-        }
-    }
-)
-
-export const loadUserFromStorage = createAsyncThunk<string | null, void>(
-    'auth/loadUserFromStorage',
-    async () => {
-        const token = await storage.getToken();
-        return token;
-    }
-);
-
-export const logout = createAsyncThunk(
-    'auth/logout', async () => {
-    await storage.removeToken();
-});
-
-export const { clearError } = authSlice.actions
-export const selectAuth = (state: RootState) => state.auth
-export default authSlice.reducer
+export const { clearError, setUser } = authSlice.actions;
+export const selectAuth = (state: RootState) => state.auth;
+export default authSlice.reducer;

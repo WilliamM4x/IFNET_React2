@@ -16,10 +16,13 @@ import { MoonIcon, SunIcon } from '@/components/ui/icon';
 import { TailwindProvider } from 'tailwindcss-react-native'
 import  { Provider, useSelector } from 'react-redux'
 import { store, useAppDispatch } from '@/app/store/store'
-import { loadUserFromStorage, selectAuth } from './store/reducers/autheSlice';
+import { selectAuth } from './store/reducers/autheSlice';
 import { S } from '@expo/html-elements';
 import { ApolloProvider } from '@apollo/client/react';
 import { apolloClient } from '@/service/apollo';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from '@/service/firebaseConfig';
+import { setUser } from '@/app/store/reducers/autheSlice'; 
 
 
 export {
@@ -29,17 +32,19 @@ export {
 function StackLayout() {
   const dispatch = useAppDispatch(); 
   const router = useRouter();
-  const { status, isLoadingFromStorage } = useSelector(selectAuth);
-  useEffect(() => {
-    dispatch(loadUserFromStorage());
-  },[dispatch]);
-  useEffect(() => {
-    if(isLoadingFromStorage) return;
+  const { status } = useSelector(selectAuth);
 
-    if(status == 'authenticated'){
-        router.replace('/home');
+  useEffect(() => {
+  const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      const token = await user.getIdToken();
+      
+      dispatch(setUser({ uid: user.uid, email: user.email, token }));
     }
-  },[dispatch, status, isLoadingFromStorage]);
+  });
+  return unsubscribe;
+}, []);
+  
 
   return (
      <Stack screenOptions={{

@@ -19,7 +19,6 @@ interface CardProductProps{
     price: number,
     imageUrl: string,
     onViewDetails: (id: string)=>void
-    onAddToCart: (id: string)=>void
 
 }
 
@@ -32,7 +31,6 @@ export default function CardProdut({
     price,
     imageUrl,
     onViewDetails,
-    onAddToCart
 }: CardProductProps){
     
     return <Card className="p-5 rounded-lg bg-slate-300" size="md" variant="outline">
@@ -68,13 +66,6 @@ export default function CardProdut({
                     onPress={()=>onViewDetails(id)}>
                         <ButtonIcon as={Eye} className="mr-2"/>
                         <ButtonText>Vizualizar</ButtonText>
-                    </Button>
-                    <Button 
-                    action="primary" 
-                    className="flex-1"
-                    onPress={()=>onAddToCart(id)}>
-                        <ButtonIcon as={ShoppingCart} className="mr-2"/>
-                        <ButtonText>Carrinho</ButtonText>
                     </Button>
             </HStack>
         </VStack>

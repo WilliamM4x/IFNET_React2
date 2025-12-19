@@ -1,37 +1,75 @@
 import CardProdut from "@/components/CardProduct";
 import { View } from "@/components/Themed";
+import { FlatList, ActivityIndicator } from 'react-native'
 import { useRouter } from "expo-router";
-import { useDispatch, useSelector } from "react-redux";
-import { logout, selectAuth } from "../store/reducers/autheSlice";
-import { Button, ButtonText } from "@/components/ui/button";
+import { Center } from '@/components/ui/center';
+import { useSelector } from "react-redux";
+import { selectAuth } from "../store/reducers/autheSlice";
 import { Text } from '@/components/ui/text';
-import { useAppDispatch } from "../store/store";
-const mockProduct = {
-    id: '001',
-    title: 'Headphone Noise Cancelling',
-    description: 'Experimente o silêncio absoluto com nosso fone de ouvido premium. Bateria com duração de 30 horas e conforto ergonômico.',
-    category: 'Áudio',
-    price: 899.90,
-    imageUrl: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&q=80',
-    onViewDetails: (id: string) => console.log(`Ver detalhes do item: ${id}`),
-    onAddToCart: (id: string) => console.log(`Adicionar item ${id} ao carrinho`),
-  };
+import { useQuery } from "@apollo/client/react";
+import { GET_PRODUCTS } from "@/service/queries";
+
 
 export default function Home(){
     const router = useRouter();
+    const { data, loading, error, refetch } = useQuery(GET_PRODUCTS);
     const {token} = useSelector(selectAuth);
 
-    return <View className="p-4 flex-1 justify-center bg-slate-500">
-      
-      
-        <CardProdut
-        {...mockProduct}
-        onAddToCart={()=>{}}
-        onViewDetails={()=>{
-            router.push({
-                pathname: "/details/[id]",
-                params: {id: mockProduct.id}
-            })
-        }}/>
-    </View>
+  if (loading) {
+        return (
+            <Center className="flex-1 bg-slate-500">
+                <ActivityIndicator size="large" color="#fff" />
+            </Center>
+        );
+    }
+
+    if (error) {
+        return (
+            <Center className="flex-1 bg-slate-500">
+                <Text className="text-white">Erro: {error.message}</Text>
+            </Center>
+        );
+    }
+
+    const products = data?.products.edges.map((edge: any) => {
+        const node = edge.node;
+        const price = parseFloat(node.variants.edges[0]?.node.price.amount) || 0;
+        
+        return {
+            id: node.id,
+            title: node.title,
+            description: node.description || 'Sem descrição',
+            category: node.category?.name || 'Sem categoria',
+            price: price,
+            imageUrl: node.featuredImage?.url || 'https://placehold.co/600x400',
+        };
+    }) || [];
+
+    return (
+        <View className="flex-1 bg-slate-500">
+            <FlatList
+                data={products}
+                keyExtractor={(item) => item.id}
+                contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
+                renderItem={({ item }) => (
+                    <View className="mb-4">
+                        <CardProdut
+                            id={item.id}
+                            title={item.title}
+                            description={item.description}
+                            category={item.category}
+                            price={item.price}
+                            imageUrl={item.imageUrl}
+                            onViewDetails={() => {
+                                const cleanId = encodeURIComponent(item.id);
+                                router.push(`details/${cleanId}`);
+                            }}
+                        />
+                    </View>
+                )}
+                onRefresh={refetch}
+                refreshing={loading}
+            />
+        </View>
+    );
 }
