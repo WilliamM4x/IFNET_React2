@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import { ScrollView, ActivityIndicator } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { useQuery } from "@apollo/client/react";
@@ -14,6 +14,7 @@ import { Center } from "@/components/ui/center";
 import { Heart, ShoppingCartIcon, Star } from "lucide-react-native";
 import { Box } from "@/components/ui/box";
 import { GET_PRODUCT } from "@/service/queries";
+import * as Notifications from 'expo-notifications';
 
 interface ProductDetail {
     id: string;
@@ -59,6 +60,19 @@ export default function Details() {
         );
     }
 
+    const handleFavorite = useCallback(() => {
+        setIsFavorite(!isFavorite);
+        Notifications.scheduleNotificationAsync({
+            content: {
+                title: isFavorite ? "Removido dos Favoritos" : "Adicionado aos Favoritos",
+                body:!isFavorite 
+                    ? `Você marcou "${data?.product?.title}" como favorito.` 
+                    : `Você desmarcou "${data?.product?.title}".`,
+            },
+            trigger: null,
+        });
+    }, [isFavorite, data]);
+
     const productData = data?.product;
     const price = parseFloat(productData.variants.edges[0]?.node.price.amount) || 0;
 
@@ -97,7 +111,7 @@ export default function Details() {
                         <Button
                             variant="link"
                             size="lg"
-                            onPress={() => setIsFavorite(!isFavorite)}
+                            onPress={handleFavorite}
                         >
                             <ButtonIcon 
                                 as={Heart} 
