@@ -21,7 +21,9 @@
         "foregroundImage": "./src/assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.williamm4x.ifnetreact2",
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "bundler": "metro",
