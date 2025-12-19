@@ -18,6 +18,8 @@ import  { Provider, useSelector } from 'react-redux'
 import { store, useAppDispatch } from '@/app/store/store'
 import { loadUserFromStorage, selectAuth } from './store/reducers/autheSlice';
 import { S } from '@expo/html-elements';
+import { ApolloProvider } from '@apollo/client/react';
+import { apolloClient } from '@/service/apollo';
 
 
 export {
@@ -75,25 +77,26 @@ function RootLayoutNav() {
  
   return (
 
-    <Provider store={store}>
-    <GluestackUIProvider mode={colorMode}>
-      <ThemeProvider value={colorMode === 'dark' ? DarkTheme : DefaultTheme}>
-       
-       <StackLayout/>
-        
-        {pathname === '/' && (
-          <Fab
-          onPress={() =>
-            setColorMode(colorMode === 'dark' ? 'light' : 'dark')
-          }
-          className="m-6"
-          size="lg"
-          >
-            <FabIcon as={colorMode === 'dark' ? MoonIcon : SunIcon} />
-          </Fab>
-        )}
-      </ThemeProvider>
-    </GluestackUIProvider>
+    <Provider store={store}> 
+      <ApolloProvider client={apolloClient}>
+          <GluestackUIProvider mode={colorMode}>
+            <ThemeProvider value={colorMode === 'dark' ? DarkTheme : DefaultTheme}>
+            
+            <StackLayout/>  
+              {pathname === '/' && (
+                <Fab
+                onPress={() =>
+                  setColorMode(colorMode === 'dark' ? 'light' : 'dark')
+                }
+                className="m-6"
+                size="lg"
+                >
+                  <FabIcon as={colorMode === 'dark' ? MoonIcon : SunIcon} />
+                </Fab>
+              )}
+            </ThemeProvider>
+          </GluestackUIProvider>
+      </ApolloProvider>
   </Provider>
   );
 }
