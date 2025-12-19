@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "105384350212",
+    "project_id": "ifnet-app",
+    "storage_bucket": "ifnet-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:105384350212:android:e91a5a0e9daaede60a5b51",
+        "android_client_info": {
+          "package_name": "com.williamm4x.ifnetreact2"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD2vdIKIn0FwmwyMKsx1pq30hmvRe9KO4s"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
